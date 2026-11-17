@@ -1,82 +1,43 @@
-# 01 --- Dataset
+# 01 — Dataset
 
-## Overview
+## Corpus
 
-The experiment uses a curated literature corpus on K-means clustering,
-outlier detection, robust clustering, and related methods.
+The experiment's literature corpus is a curated collection of **17 research papers** on K-means clustering, outlier detection, robust clustering, and related methods.
 
--   **Original corpus:** 17 research papers.
--   **Paper format:** PDF.
--   **Publication range:** 1967--2026.
--   **Paper identifiers:** P001--P017.
--   **Knowledge cutoff configured in the runner:** 2026.
--   **Dataset root in the code:**
-    `ATR/agents/dataset/papers/trimmed_k_means/`.
+- Corpus identifier in the primary experiment: **D01**
+- Paper identifiers: **P001–P017**
+- File format: PDF
+- Configured knowledge cutoff: 2026
+- Dataset directory configured in `main.py`: `ATR/agents/dataset/papers/trimmed_k_means/`
 
-The 17-paper corpus is referred to as **D01** in the experiment
-analysis.
+### Bibliography
 
-## Corpus preparation
+The corpus bibliography is maintained in [`corpus.bib`](./corpus.bib). It contains the BibTeX citation records used to identify and cite the papers.
 
-The runner searches year-named subdirectories under the dataset root and
-includes PDF files whose directory year is no later than the configured
-knowledge-cutoff year. The selected paths are sorted before processing.
+## Corpus processing
 
-Each paper is analysed separately by the LLM. The structured paper
-analysis captures:
+The runner selects PDFs from year-named subdirectories under the configured dataset root, subject to the configured knowledge-cutoff year. Papers are processed individually. Each paper receives a stable paper ID and a structured analysis containing its research question, context, methods, findings, assumptions, explicit limitations, potential open questions, candidate hypotheses, evidence excerpts, and section/page references where available.
 
--   Bibliographic information and research question
--   Context and methods
--   Main findings and assumptions
--   Explicit limitations
--   Potential open questions
--   Candidate hypotheses
--   Evidence excerpts and identifiable section/page references
-
-Paper IDs are used to preserve traceability from generated gaps and
-hypotheses back to the source corpus.
+The paper IDs are used by both pipelines to trace generated gaps and hypotheses back to the supplied literature.
 
 ## Dataset variants in the experiment
 
-  ------------------------------------------------------------------------
-  Dataset ID                        Number of papers Use
-  --------------------- ---------------------------- ---------------------
-  D01                                             17 Original corpus;
-                                                     primary comparison
+| Dataset ID | Paper count | Interpretation |
+|---|---:|---|
+| D01 | 17 | Complete corpus; primary comparison |
+| D02 | 15 | Incomplete subset |
+| D03 | 13 | Incomplete subset |
+| D04 | 16 | Incomplete subset |
 
-  D02                                             15 Incomplete subset
-                                                     from a run with
-                                                     paper-processing
-                                                     failures
+D02–D04 arose from runs in which some papers were not successfully processed. They are not pooled with D01 for the primary single-agent versus multi-agent comparison.
 
-  D03                                             13 Incomplete subset
-                                                     from a run with
-                                                     paper-processing
-                                                     failures
+## Dataset identity and reproducibility
 
-  D04                                             16 Incomplete subset
-                                                     from a run with
-                                                     paper-processing
-                                                     failures
-  ------------------------------------------------------------------------
-
-D02--D04 are subsets of the original corpus caused by unsuccessful paper
-processing in particular runs. They are **not directly comparable** with
-D01 and are excluded from the primary single-versus-multi comparison.
-
-## Dataset identity
-
-The evaluation script fingerprints the sorted, normalised paper paths to
-assign dataset IDs. It also writes a dataset mapping CSV containing the
-dataset ID, paper count, and paths.
+`evaluate_runs.py` fingerprints the sorted, normalised paper paths to assign dataset IDs. It writes a dataset mapping CSV containing the dataset ID, paper count, and source paths. Each run's inference history also retains the paper paths and analysis records used for that run.
 
 ## Limitations
 
--   The corpus is deliberately focused and relatively small.
--   Corpus-only generation can miss relevant work outside the supplied
-    papers.
--   A paper's silence or an explicitly stated limitation is not, by
-    itself, sufficient evidence of a research gap.
--   Incomplete datasets caused by API or processing failures must not be
-    pooled with D01 when comparing output quality.
-
+- The corpus is bounded and is not an exhaustive survey of all published research.
+- Corpus-only generation may miss relevant work outside the supplied papers.
+- A limitation or omission in one paper is not automatically a research gap.
+- A claim of novelty beyond this corpus requires a broader literature review.
