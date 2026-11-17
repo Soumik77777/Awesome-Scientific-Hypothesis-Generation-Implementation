@@ -1,71 +1,22 @@
-# 03 --- Codebase
+# 03 — Codebase
 
-## 1. Overview
+## Project files
 
-The project implements two alternative pipelines behind a shared runner:
+The code in this directory is linked directly below. These are the supplied code snapshots dated 17 November 2026.
 
--   `single_agent.py` --- single-LLM literature synthesis,
-    self-critique, and revision.
--   `multi_agent_debate.py` --- adaptive multi-agent generation,
-    perspective-based criticism, centralised adjustment, and final
-    curation.
--   `main.py` --- configuration, model initialisation, execution,
-    diagnostics, and output persistence.
+| File | Role |
+|---|---|
+| [`main.py`](./main.py) | Configuration, model initialisation, mode selection, run execution, diagnostics, and artifact writing |
+| [`single_agent.py`](./single_agent.py) | Single-researcher literature synthesis, self-critique, and revision |
+| [`multi_agent_debate.py`](./multi_agent_debate.py) | Topic-adaptive perspectives, multi-agent generation, critique, adjustment, and curation |
+| [`evaluate_runs.py`](./evaluate_runs.py) | Run/dataset/architecture mappings, metadata extraction, and evaluation-sheet generation |
+| [`requirements.txt`](./requirements.txt) | Pinned Python dependencies for the current Gemini/LangChain integration |
 
-The code snapshot supplied for this update is dated **2026-11-17**.
+## Runtime configuration
 
-## 2. Project structure
+The supplied `main.py` snapshot currently sets:
 
-The following is the logical structure reflected by the current code and
-configured paths. It is not a claim that every directory/file has been
-uploaded in this conversation.
-
-``` text
-ATR/
-└── agents/
-    ├── main.py
-    ├── single_agent.py
-    ├── multi_agent_debate.py
-    ├── dataset/
-    │   └── papers/
-    │       └── trimmed_k_means/
-    │           └── <publication_year>/
-    │               └── *.pdf
-    ├── output/
-    │   └── run_<timestamp>/
-    │       ├── run_<timestamp>_identified_research_gaps.txt
-    │       ├── run_<timestamp>_proposed_hypothesis.txt
-    │       ├── run_<timestamp>_prompt_snapshot.py
-    │       ├── run_<timestamp>_api_usage.json
-    │       ├── run_<timestamp>_inference_history.json
-    │       ├── run_<timestamp>_inference_history.txt
-    │       └── run_<timestamp>_debug_<timestamp>.jsonl
-    └── analysis/
-        ├── 01_run_id_mapping.csv
-        ├── 02_dataset_id_mapping.csv
-        ├── 03_architecture_id_mapping.csv
-        ├── 04_run_metadata.csv
-        └── 05_evaluation_scores.csv
-```
-
-## 3. `main.py`
-
-Responsibilities:
-
--   Load environment variables using `python-dotenv`.
--   Configure the mode, topic, model, cutoff year, paths, and run
-    controls.
--   Select the appropriate pipeline function.
--   Initialise `ChatGoogleGenerativeAI`.
--   Wrap the model with structured-output logging.
--   Snapshot the complete selected agent module for each run.
--   Record environment/package diagnostics.
--   Save readable gap and hypothesis outputs, API usage, inference
-    history, and debug logs.
-
-Important configuration values in the supplied snapshot:
-
-``` python
+```python
 MODE = "multi"
 TOPIC = "Status and direction of outlier trimming in K-means and similar algorithms"
 MODEL_NAME = "gemini-3.5-flash-lite"
@@ -76,108 +27,64 @@ PAUSE_SEC = 10
 MAX_RETRIES = 3
 ```
 
-The model allowlist intentionally does not pass temperature to
-`gemini-3.5-flash-lite`; consequently, the requested temperature is not
-applied in the recorded configuration.
+The model allowlist does not pass `temperature` for `gemini-3.5-flash-lite`; therefore, `0.2` is a requested setting, not an applied setting for this model. The run metadata correctly records the applied temperature as unavailable (`NA`).
 
-## 4. `single_agent.py`
+## Module responsibilities
 
-The single-agent module:
+### `main.py`
 
--   Reads PDFs individually using a common structured literature-reader
-    prompt.
--   Synthesises paper summaries into research gaps.
--   Performs self-critique followed by revision.
--   Generates hypotheses only after gap refinement.
--   Independently critiques and revises hypotheses.
--   Preserves evidence, paper references, IDs, and per-round history.
--   Uses structured JSON parsing and records API usage and inference
-    events.
+- Loads environment variables using `python-dotenv`.
+- Selects `single` or `multi` mode.
+- Initialises `ChatGoogleGenerativeAI`.
+- Wraps structured-output calls to log token usage and inference events.
+- Captures a run-specific prompt/code snapshot.
+- Records package/environment diagnostics.
+- Writes research gaps, hypotheses, API usage, inference history, and debug logs.
 
-One self-critique round consists of two calls: critique and revision.
-The same researcher performs both.
+### `single_agent.py`
 
-## 5. `multi_agent_debate.py`
+- Reads each paper individually.
+- Produces structured paper summaries with contextual evidence excerpts.
+- Generates and synthesises research gaps.
+- Applies self-critique followed by revision.
+- Generates hypotheses from finalised gaps.
+- Applies hypothesis self-critique and revision.
+- Preserves record IDs, evidence, paper references, and round history.
 
-The multi-agent module:
+### `multi_agent_debate.py`
 
--   Discovers topic-adaptive perspectives.
--   Generates perspective-specific research gaps and hypotheses.
--   Uses structured JSON Schema output.
--   Curates initial candidate gaps and checks them against the corpus.
--   Runs independent perspective critiques.
--   Uses a centralised adjuster to make record-level decisions.
--   Performs final curation.
--   Tracks evidence, supporting papers, IDs, decisions, and inference
-    history.
+- Discovers topic-adaptive research perspectives.
+- Generates perspective-specific gaps and hypotheses.
+- Curates candidate gaps and checks candidates against the full corpus.
+- Runs independent perspective-based critiques.
+- Uses a central scientific adjuster to make record-level decisions.
+- Performs final curation while preserving IDs and debate history.
 
-The supplied architecture snapshot defines theoretical, computational,
-observational, and experimental perspectives as examples; the
-perspective finder can adapt the actual set to the topic.
+### `evaluate_runs.py`
 
-## 6. Run outputs and logging
+Reads the configured run folders without modifying them. It creates run-ID, dataset-ID, and architecture-ID mappings, run metadata, and a blank evaluation sheet. Architecture identity is based on a SHA-256 hash of the prompt snapshot; dataset identity is based on a fingerprint of the paper paths.
 
-Each run folder stores:
+## Dependencies and installation
 
-  -----------------------------------------------------------------------
-  Artifact                            Purpose
-  ----------------------------------- -----------------------------------
-  `identified_research_gaps.txt`      Human-readable gap list
+The code uses Python 3.11 or later. The requirements file pins the LangChain Google GenAI integration, its core abstraction package, Google's GenAI SDK, Pydantic, and `python-dotenv`.
 
-  `proposed_hypothesis.txt`           Hypotheses, rationales,
-                                      predictions, and references
+From this directory, install with:
 
-  `prompt_snapshot.py`                Snapshot of the complete selected
-                                      agent module
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
-  `api_usage.json`                    Per-call token usage, runtime,
-                                      status, and usage summary
+Set `GOOGLE_API_KEY` in the environment (or in a local `.env` file loaded by `main.py`). Do not commit credentials.
 
-  `inference_history.json`            Agent parameters, events, final
-                                      result, and artifact paths
+## Reproducibility notes
 
-  `inference_history.txt`             Readable inference history
+- Keep each run's `prompt_snapshot.py`, `api_usage.json`, and `inference_history.json`.
+- Distinguish requested model parameters from parameters actually applied.
+- Preserve the exact corpus and prompt snapshot used by each run.
+- Do not treat D02–D04 as equivalent to D01.
+- The current runner configuration may differ from the configuration used in historical runs.
 
-  `debug_*.jsonl`                     Structured-output request and
-                                      environment diagnostics
-  -----------------------------------------------------------------------
+## Version note
 
-## 7. Evaluation utility
-
-`evaluate_runs.py` reads run folders and creates run, dataset, and
-architecture mappings, metadata, and a blank evaluation sheet. It
-identifies architectures using SHA-256 hashes of prompt snapshots and
-datasets using fingerprints of paper paths. It does not modify the
-source run folders.
-
-The supplied filled evaluation CSV and derived average-score CSVs are
-analysis outputs, not generated directly by the blank-sheet creation
-step.
-
-## 8. Dependencies and configuration
-
-The supplied `main.py` imports:
-
--   `langchain-google-genai`
--   `python-dotenv`
--   `langchain-core` (used by the agent modules)
--   `google-genai` (used by the Gemini integration)
--   `pydantic` (used by structured-output schemas)
-
-The runner records the installed versions of `langchain-core`,
-`langchain-google-genai`, `google-genai`, and `pydantic` in the debug
-log. Exact package versions should be taken from a run's environment
-diagnostics rather than hard-coded here.
-
-Set the Google API key in the environment (typically through `.env`)
-before execution. Do not commit API keys or other secrets.
-
-## 9. Reproducibility notes
-
--   Keep the run-specific prompt snapshot with every result.
--   Preserve the complete inference history and API usage records.
--   Distinguish requested model parameters from parameters actually
-    applied.
--   Do not treat D02--D04 as equivalent to D01.
--   The current `main.py` configuration is not necessarily identical to
-    the settings used by every historical run.
+The pinned dependency set is selected for Python 3.11+ and the `langchain-google-genai` 4.5.0 integration, which uses the consolidated `google-genai` SDK. The pins satisfy the integration's declared minimums for `langchain-core` and `google-genai`. See the [langchain-google-genai release](https://pypi.org/project/langchain-google-genai/4.5.0/), [google-genai release](https://pypi.org/project/google-genai/3.2.0/), and [langchain-core release](https://pypi.org/project/langchain-core/1.8.1/). The project code should be smoke-tested in a clean virtual environment before a long experiment run.
