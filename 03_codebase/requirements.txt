@@ -1,3 +1,8 @@
-langchain-google-genai
-pypdf
-python-dotenv
+# Python 3.11+
+# Versions selected to match the current LangChain Google GenAI integration
+# and the direct imports used by main.py and the agent modules.
+langchain-google-genai==4.5.0
+langchain-core==1.8.1
+google-genai==3.2.0
+pydantic==2.14.3
+python-dotenv==1.2.4
